@@ -1,0 +1,28 @@
+# Node / deps
+node_modules/
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.*
+server/.env
+server/.env.*
+
+# Logs & coverage
+logs/
+*.log
+coverage/
+*.lcov
+
+# Build / cache
+dist/
+tmp/
+.cache/
+
+# Editors
+.vscode/
+.idea/
+.DS_Store
