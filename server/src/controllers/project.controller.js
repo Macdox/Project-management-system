@@ -21,6 +21,30 @@ exports.createProject = async (req, res) => {
   res.status(201).json(project);
 };
 
+// ADMIN: delete project
+exports.deleteProject = async (req, res) => {
+  await Project.findByIdAndDelete(req.params.id);
+  res.json({ message: "Project deleted" });
+};
+
+// ADMIN: UPDATE project
+exports.updateProject = async (req, res) => {
+  const { name, description, deadline } = req.body;
+
+  const project = await Project.findById(req.params.id);
+  if(!project) return res.status(404).json({ message: "Project not found" });
+  if (project.lead.toString() !== req.user.id)
+    return res.status(403).json({ message: "Not project lead" });
+  if(project.status === "COMPLETED") return res.status(400).json({ message: "Cannot update completed projects" });
+
+  project.name = name || project.name;
+  project.description = description || project.description;
+  project.deadline = deadline || project.deadline;
+  await project.save();
+
+  res.json(project);
+};
+
 // ADMIN: mark completed
 exports.markCompleted = async (req, res) => {
   await Project.findByIdAndUpdate(req.params.id, {
