@@ -4,6 +4,7 @@ const user = require("../models/user");
 // ADMIN: create project
 exports.createProject = async (req, res) => {
   const { name, description, deadline, leadEmail } = req.body;
+  console.log("Creating project with lead email:", leadEmail);
 
   const leadId = await user.findOne({ email: leadEmail }).then(u => u._id);
   

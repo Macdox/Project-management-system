@@ -6,6 +6,7 @@ const {
 	refreshToken,
 	logout,
 	editUserRole,
+	checkAuth,
 } = require("../controllers/auth.controller");
 const auth = require("../middleware/auth");
 const role = require("../middleware/role");
@@ -21,6 +22,9 @@ router.post("/login", login);
 
 // Refresh access token
 router.post("/refresh", refreshToken);
+
+// Validate access token
+router.get("/check", auth, checkAuth);
 
 // Logout
 router.post("/logout", auth, logout);

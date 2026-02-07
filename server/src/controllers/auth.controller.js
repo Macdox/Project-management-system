@@ -40,7 +40,7 @@ exports.login = async (req, res) => {
   user.refreshToken = refreshToken;
   await user.save();
 
-  res.json({ accessToken, refreshToken, role: user.role });
+  res.json({ accessToken, refreshToken, user: { name: user.name, email: user.email, role: user.role } });
 };
 
 // Issue new access/refresh tokens using a refresh token
@@ -62,7 +62,7 @@ exports.refreshToken = async (req, res) => {
     user.refreshToken = newRefreshToken;
     await user.save();
 
-    res.json({ accessToken: newAccessToken, refreshToken: newRefreshToken });
+    res.json({ accessToken: newAccessToken, refreshToken: newRefreshToken,    });
   } catch {
     res.status(403).json({ message: "Invalid refresh token" });
   }
@@ -93,4 +93,10 @@ exports.editUserRole = async (req, res) => {
   await user.save();
   res.json({ message: "User role updated" });
 };
-  
+
+// Check auth using access token
+exports.checkAuth = async (req, res) => {
+  const user = await User.findById(req.user.id).select("name email role");
+  if (!user) return res.status(404).json({ message: "User not found" });
+  res.json({ user });
+};

@@ -1,0 +1,12 @@
+
+.app {
+	background: linear-gradient(180deg, #f5f7fb 0%, #e8ecf5 100%);
+}
+
+.card-title {
+	margin-bottom: 0.5rem;
+}
+
+ol li {
+	margin-bottom: 0.35rem;
+}
