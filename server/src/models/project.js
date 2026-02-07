@@ -19,6 +19,22 @@ const projectSchema = new mongoose.Schema({
       ref: "User",
     },
   ],
+  documents: [
+    {
+      filename: String,
+      originalName: String,
+      mimeType: String,
+      size: Number,
+      uploadedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      uploadedAt: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
 });
 
 module.exports = mongoose.model("Project", projectSchema);

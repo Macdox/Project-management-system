@@ -72,6 +72,34 @@ exports.assignDeveloper = async (req, res) => {
   res.json({ message: "Developer assigned" });
 };
 
+// AUTH: upload project document
+exports.uploadDocument = async (req, res) => {
+  if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+
+  const project = await Project.findById(req.params.id);
+  if (!project) return res.status(404).json({ message: "Project not found" });
+
+  const isAdmin = req.user.role === "ADMIN";
+  const isLead = project.lead && project.lead.toString() === req.user.id;
+  if (!isAdmin && !isLead && !isDeveloper) {
+    return res.status(403).json({ message: "Not allowed to upload to this project" });
+  }
+
+  project.documents.push({
+    filename: req.file.filename,
+    originalName: req.file.originalname,
+    mimeType: req.file.mimetype,
+    size: req.file.size,
+    uploadedBy: req.user.id,
+  });
+
+  await project.save();
+
+  const savedFile = project.documents[project.documents.length - 1];
+
+  res.status(201).json({ message: "Document uploaded", file: savedFile });
+};
+
 // ALL: view projects
 exports.getProjects = async (req, res) => {
   let filter = {};
