@@ -1,5 +1,5 @@
 # Event Management System (API + Frontend)
-Role-based project management with document uploads. Backend: Express + MongoDB with JWT auth/refresh, rate limiting, and role guards. Frontend: React + Bootstrap with protected routes and admin tooling.
+Role-based project management with document uploads. Backend: Express + MongoDB with JWT auth/refresh, rate limiting, role guards, and assignment email notifications. Frontend: React + Bootstrap with protected routes and admin tooling.
 
 ## Features
 - JWT access + refresh tokens with logout + rotation
@@ -7,6 +7,7 @@ Role-based project management with document uploads. Backend: Express + MongoDB 
 - Projects: create/update/delete, mark complete, assign lead, assign developer, list by role
 - Documents: upload per project (PDF/DOC/DOCX/PNG/JPG), served from `/uploads`
 - Users (ADMIN): create users, edit user role, list all users
+- Email: Gmail-based notification when a developer is assigned to a project
 - Security middleware: Helmet, CORS, rate limiting
 - Frontend: protected routes, token refresh interceptor, project CRUD, doc upload, user admin
 
@@ -18,7 +19,7 @@ Role-based project management with document uploads. Backend: Express + MongoDB 
 - server/src/app.js — Express app, middleware, routes, serves `/uploads`
 - server/src/config/db.js — Mongo connection helper
 - server/src/routes — auth, projects, users
-- server/src/controllers — handlers for auth, projects, users
+- server/src/controllers — handlers for auth, projects, users, assignment mailer
 - server/src/middleware — auth token + role guard
 - server/src/models — user, project (with documents[])
 - server/src/utils/token.utils.js — JWT helpers
@@ -37,6 +38,8 @@ JWT_SECRET=change-me
 JWT_REFRESH_SECRET=change-me-too
 NODE_ENV=development
 CLIENT_URL=http://localhost:3000
+EMAIL_ADDRESS=your_gmail_address
+EMAIL_PASSWORD=your_gmail_app_password
 ```
 3) Seed an initial ADMIN user manually (email + hashed password) or temporarily allow public register while bootstrapping.
 4) Run dev server
@@ -55,8 +58,8 @@ App starts at http://localhost:3000. Backend base URL defaults to http://localho
 
 ## Roles & Permissions
 - ADMIN: create users, edit roles, list users, create/update/delete projects, mark complete, upload documents
-- LEAD: view/update own projects, assign developers, upload documents
-- DEVELOPER: view assigned projects, upload documents
+- LEAD: view/update own projects, assign developers (sends email), upload documents
+- DEVELOPER: view assigned projects, view documents
 
 ## Authentication Flow
 - Login → receive `accessToken` (15m) + `refreshToken` (7d)
@@ -82,7 +85,7 @@ Projects (base: /api/projects)
 - PATCH /:id/update (ADMIN/Lead-owner) — update project fields
 - DELETE /:id/delete (ADMIN) — delete project
 - PATCH /:id/complete (ADMIN) — mark completed
-- PATCH /:id/assign (LEAD) — assign developer by email `{ developerEmail }`
+- PATCH /:id/assign (LEAD) — assign developer by email `{ developerEmail }` (triggers email)
 - POST /:id/documents (AUTH) — upload document (field `document` or `file`), roles: admin/lead/dev on that project
 - GET / (AUTH) — list projects filtered by role (ADMIN all, LEAD theirs, DEVELOPER assigned)
 
@@ -108,7 +111,6 @@ curl -X POST http://localhost:5000/api/projects/<projectId>/documents \
   -F "document=@/path/to/file.pdf"
 ```
 
-## Notes / TODO
-- Harden validation and error handling around emails and ownership
-- Add tests and CI
-- Consider env var for port and enabling HTTPS behind a proxy
+## Notes
+- Requires Gmail app password for emails (`EMAIL_ADDRESS`, `EMAIL_PASSWORD`)
+- Set `CLIENT_URL` (comma-separated) to whitelist frontends for CORS

@@ -22,6 +22,9 @@ dist/
 tmp/
 .cache/
 
+
+#uploads
+uploads/
 # Editors
 .vscode/
 .idea/

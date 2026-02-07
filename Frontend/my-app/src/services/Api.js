@@ -51,6 +51,8 @@ export const updateProject = (id, payload) =>
   Api.patch(`/projects/${id}/update`, payload);
 export const deleteProject = (id) => Api.delete(`/projects/${id}/delete`);
 export const completeProject = (id) => Api.patch(`/projects/${id}/complete`);
+export const assignDeveloper = (id, developerEmail) =>
+  Api.patch(`/projects/${id}/assign`, { developerEmail });
 export const uploadProjectDocument = (id, file) => {
   const formData = new FormData();
   formData.append("document", file);

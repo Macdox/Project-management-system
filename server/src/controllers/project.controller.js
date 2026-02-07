@@ -1,14 +1,47 @@
+const nodemailer = require("nodemailer");
 const Project = require("../models/project");
 const user = require("../models/user");
+
+let mailer;
+const getMailer = () => {
+  if (mailer) return mailer;
+
+  const { EMAIL_ADDRESS, EMAIL_PASSWORD } = process.env;
+
+  if (!EMAIL_ADDRESS || !EMAIL_PASSWORD) return null;
+
+  mailer = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user: EMAIL_ADDRESS, pass: EMAIL_PASSWORD },
+  });
+
+  return mailer;
+};
+
+const sendAssignmentEmail = async ({ to, projectName }) => {
+  const transporter = getMailer();
+  if (!transporter) return;
+  const fromAddress = process.env.EMAIL_ADDRESS;
+  try {
+    await transporter.sendMail({
+      from: fromAddress,
+      to,
+      subject: `Assigned to project: ${projectName}`,
+      text: `You have been assigned to project "${projectName}". Please log in to view details and next steps.`,
+    });
+  } catch (err) {
+    console.error("Mail send failed", err.message);
+  }
+};
 
 // ADMIN: create project
 exports.createProject = async (req, res) => {
   const { name, description, deadline, leadEmail } = req.body;
   console.log("Creating project with lead email:", leadEmail);
 
-  const leadId = await user.findOne({ email: leadEmail }).then(u => u._id);
-  
-  if(!leadId) {
+  const leadId = await user.findOne({ email: leadEmail }).then((u) => u._id);
+
+  if (!leadId) {
     return res.status(400).json({ message: "Lead not found" });
   }
 
@@ -33,10 +66,13 @@ exports.updateProject = async (req, res) => {
   const { name, description, deadline } = req.body;
 
   const project = await Project.findById(req.params.id);
-  if(!project) return res.status(404).json({ message: "Project not found" });
+  if (!project) return res.status(404).json({ message: "Project not found" });
   if (project.lead.toString() !== req.user.id)
     return res.status(403).json({ message: "Not project lead" });
-  if(project.status === "COMPLETED") return res.status(400).json({ message: "Cannot update completed projects" });
+  if (project.status === "COMPLETED")
+    return res
+      .status(400)
+      .json({ message: "Cannot update completed projects" });
 
   project.name = name || project.name;
   project.description = description || project.description;
@@ -57,18 +93,32 @@ exports.markCompleted = async (req, res) => {
 // LEAD: assign developer
 exports.assignDeveloper = async (req, res) => {
   const { developerEmail } = req.body;
-  const developer = await user.findOne({ email: developerEmail }).then(u => u._id);
-  if (!developer) return res.status(404).json({ message: "Developer not found" });
-  
+  const developer = await user.findOne({ email: developerEmail });
+  if (!developer)
+    return res.status(404).json({ message: "Developer not found" });
+
   const project = await Project.findById(req.params.id);
+  if (!project) return res.status(404).json({ message: "Project not found" });
 
   if (project.lead.toString() !== req.user.id)
     return res.status(403).json({ message: "Not project lead" });
 
-  if(project.status === "COMPLETED") return res.status(400).json({ message: "Cannot assign developers to completed projects" });
-  
-  project.developers.push(developer);
+  if (project.status === "COMPLETED")
+    return res
+      .status(400)
+      .json({ message: "Cannot assign developers to completed projects" });
+
+  const alreadyAssigned = project.developers.some(
+    (devId) => devId.toString() === developer._id.toString(),
+  );
+  if (alreadyAssigned) {
+    return res.status(200).json({ message: "Developer already assigned" });
+  }
+
+  project.developers.push(developer._id);
   await project.save();
+
+  sendAssignmentEmail({ to: developer.email, projectName: project.name });
 
   res.json({ message: "Developer assigned" });
 };
@@ -82,8 +132,13 @@ exports.uploadDocument = async (req, res) => {
 
   const isAdmin = req.user.role === "ADMIN";
   const isLead = project.lead && project.lead.toString() === req.user.id;
-  if (!isAdmin && !isLead && !isDeveloper) {
-    return res.status(403).json({ message: "Not allowed to upload to this project" });
+  const isDeveloper = req.user.role === "DEVELOPER";
+  const assignedToDev = project.developers.some((devId) => devId.toString() === req.user.id);
+
+  if (!isAdmin && !isLead && !(isDeveloper && assignedToDev)) {
+    return res
+      .status(403)
+      .json({ message: "Not allowed to upload to this project" });
   }
 
   project.documents.push({
