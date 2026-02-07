@@ -23,8 +23,9 @@ tmp/
 .cache/
 
 
-#uploads
+# uploads (local storage)
 uploads/
+server/uploads/
 # Editors
 .vscode/
 .idea/
